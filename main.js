@@ -35,6 +35,7 @@ const opponentSpeedFactor = 0.8; // Opponents move slightly slower than gameSpee
 let currentScenario = 'start'; // 'start', 'snow', 'mist', 'night'
 let scenarioCycle = 0;
 const baseScenarioThresholds = {
+    start: 0,
     snow: 100,
     mist: 200,
     night: 300
@@ -272,6 +273,7 @@ function animate() {
        
        if (currentScore >= cycleThreshold) {
            // Completed a full cycle
+           console.log(`Scenario cycle ${scenarioCycle} completed - returning to start scenario`);
            scenarioCycle++;
            nextScenario = 'start';
        } else {
@@ -370,6 +372,7 @@ function resetScenario() {
     // Disable headlights by default
     headlight1.intensity = 0;
     headlight2.intensity = 0;
+    console.log('Headlights disabled for scenario reset');
 }
 
 function setStartScenario() {
@@ -381,24 +384,26 @@ function setSnowScenario() {
     resetScenario();
     scene.background = new THREE.Color(0xcccccc); // Light grey background
     roadMaterial.color.set(0xffffff); // White road
+    console.log('Snow scenario: Road color set to white');
     
-    // Create snow particles
+    // Create enhanced snow particles
     const snowGeometry = new THREE.BufferGeometry();
-    const snowCount = 1000;
+    const snowCount = 2000; // Increased particle count
     const positions = new Float32Array(snowCount * 3);
     
     for (let i = 0; i < snowCount; i++) {
-        positions[i * 3] = Math.random() * 200 - 100; // x (-50 to 50)
-        positions[i * 3 + 1] = Math.random() * 50 + 10; // y (10 to 60)
-        positions[i * 3 + 2] = Math.random() * 1000 - 500; // z (-500 to 500)
+        positions[i * 3] = Math.random() * 200 - 100; // x (-100 to 100)
+        positions[i * 3 + 1] = Math.random() * 100 + 20; // y (20 to 120)
+        positions[i * 3 + 2] = Math.random() * 2000 - 1000; // z (-1000 to 1000)
     }
     
     snowGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const snowMaterial = new THREE.PointsMaterial({
         color: 0xffffff,
-        size: 0.1,
+        size: 0.2, // Larger particles
         transparent: true,
-        opacity: 0.8
+        opacity: 0.9,
+        sizeAttenuation: true
     });
     
     snowParticles = new THREE.Points(snowGeometry, snowMaterial);
@@ -417,12 +422,12 @@ function setSnowScenario() {
             if (leftPressed) momentumX = -carSpeedX * snowFriction;
             if (rightPressed) momentumX = carSpeedX * snowFriction;
             
-            // Move snow particles
+            // Move enhanced snow particles
             const positions = snowParticles.geometry.attributes.position.array;
             for (let i = 0; i < positions.length; i += 3) {
-                positions[i + 1] -= 0.05; // Fall down
-                if (positions[i + 1] < -10) {
-                    positions[i + 1] = Math.random() * 50 + 60;
+                positions[i + 1] -= 0.1; // Faster fall speed
+                if (positions[i + 1] < -20) {
+                    positions[i + 1] = Math.random() * 100 + 120; // Reset to top of new range
                 }
             }
             snowParticles.geometry.attributes.position.needsUpdate = true;
@@ -441,12 +446,12 @@ function setMistScenario() {
     resetScenario();
     scene.background = new THREE.Color(0xaaaaaa); // Grey background
     scene.fog = new THREE.Fog(0xaaaaaa, 10, 50); // Add fog (color, near, far)
-    
     // Enable headlights with yellow tint for better visibility in fog
     headlight1.intensity = 1.5;
     headlight2.intensity = 1.5;
     headlight1.color.set(0xffffaa);
     headlight2.color.set(0xffffaa);
+    console.log('Mist scenario: Headlights activated with yellow tint');
 }
 
 function setNightScenario() {
@@ -461,6 +466,7 @@ function setNightScenario() {
     headlight2.intensity = 2;
     headlight1.color.set(0xaaccff);
     headlight2.color.set(0xaaccff);
+    console.log('Night scenario: Headlights activated with blue tint');
 }
 // --- End Scenario Functions ---
 
