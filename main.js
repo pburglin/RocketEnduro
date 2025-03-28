@@ -7,6 +7,7 @@ let isGameOver = false;
 let leftPressed = false;
 let rightPressed = false;
 let upPressed = false;
+let headlight1, headlight2; // Headlight references
 const carSpeedX = 0.15; // Horizontal speed of the car
 const carAcceleration = 0.005; // Increased acceleration
 const carDeceleration = 0.0015; // Slightly faster deceleration
@@ -32,17 +33,13 @@ const opponentSpeedFactor = 0.8; // Opponents move slightly slower than gameSpee
 
 // Scenario variables
 let currentScenario = 'start'; // 'start', 'snow', 'mist', 'night'
-const scenarioThresholds = {
-    snow: 500,
-    mist: 2500,
-    night: 3500,
-    start: 4500,
-    mist: 5500,
-    snow: 6500,
-    night: 7500,
-    start: 8500,
-    // Add more thresholds for cycling or increasing difficulty within scenarios
+let scenarioCycle = 0;
+const baseScenarioThresholds = {
+    snow: 100,
+    mist: 200,
+    night: 300
 };
+const scenarioCycleIncrement = 300; // Score increment between cycles
 
 // Scene setup
 const scene = new THREE.Scene();
@@ -102,6 +99,22 @@ const carMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
 const car = new THREE.Mesh(carGeometry, carMaterial);
 car.position.z = -5;
 scene.add(car);
+
+// Initialize car headlights
+headlight1 = new THREE.SpotLight(0xffffff, 2, 50, Math.PI/6, 0.5);
+headlight1.position.set(-0.3, 0, -1);
+headlight1.target.position.set(0, 0, -10);
+car.add(headlight1);
+car.add(headlight1.target);
+
+headlight2 = new THREE.SpotLight(0xffffff, 2, 50, Math.PI/6, 0.5);
+headlight2.position.set(0.3, 0, -1);
+headlight2.target.position.set(0, 0, -10);
+car.add(headlight2);
+car.add(headlight2.target);
+
+// Snow particles
+let snowParticles = null;
 
 // Opponent Car Setup
 const opponentGeometry = new THREE.BoxGeometry(1, 0.5, 2);
@@ -255,17 +268,32 @@ function animate() {
 
        // --- Scenario Update Logic ---
        let nextScenario = 'start';
-       if (currentScore >= scenarioThresholds.night) {
-           nextScenario = 'night';
-       } else if (currentScore >= scenarioThresholds.mist) {
-           nextScenario = 'mist';
-       } else if (currentScore >= scenarioThresholds.snow) {
-           nextScenario = 'snow';
+       const cycleThreshold = baseScenarioThresholds.night + (scenarioCycle * scenarioCycleIncrement);
+       
+       if (currentScore >= cycleThreshold) {
+           // Completed a full cycle
+           scenarioCycle++;
+           nextScenario = 'start';
+       } else {
+           // Check current cycle scenarios
+           const adjustedThresholds = {
+               snow: baseScenarioThresholds.snow + (scenarioCycle * scenarioCycleIncrement),
+               mist: baseScenarioThresholds.mist + (scenarioCycle * scenarioCycleIncrement),
+               night: baseScenarioThresholds.night + (scenarioCycle * scenarioCycleIncrement)
+           };
+           
+           if (currentScore >= adjustedThresholds.night) {
+               nextScenario = 'night';
+           } else if (currentScore >= adjustedThresholds.mist) {
+               nextScenario = 'mist';
+           } else if (currentScore >= adjustedThresholds.snow) {
+               nextScenario = 'snow';
+           }
        }
        
        if (nextScenario !== currentScenario) {
            currentScenario = nextScenario;
-           console.log(`Switching to scenario: ${currentScenario}`);
+           console.log(`Switching to scenario: ${currentScenario} (Cycle ${scenarioCycle})`);
            switch (currentScenario) {
                case 'start': setStartScenario(); break;
                case 'snow': setSnowScenario(); break;
@@ -334,6 +362,14 @@ function resetScenario() {
     roadMarkers.laneDashes.forEach(dash => dash.visible = showMarkers);
     
     // Remove snow particles if they exist
+    if (snowParticles) {
+        scene.remove(snowParticles);
+        snowParticles = null;
+    }
+    
+    // Disable headlights by default
+    headlight1.intensity = 0;
+    headlight2.intensity = 0;
 }
 
 function setStartScenario() {
@@ -345,6 +381,28 @@ function setSnowScenario() {
     resetScenario();
     scene.background = new THREE.Color(0xcccccc); // Light grey background
     roadMaterial.color.set(0xffffff); // White road
+    
+    // Create snow particles
+    const snowGeometry = new THREE.BufferGeometry();
+    const snowCount = 1000;
+    const positions = new Float32Array(snowCount * 3);
+    
+    for (let i = 0; i < snowCount; i++) {
+        positions[i * 3] = Math.random() * 200 - 100; // x (-50 to 50)
+        positions[i * 3 + 1] = Math.random() * 50 + 10; // y (10 to 60)
+        positions[i * 3 + 2] = Math.random() * 1000 - 500; // z (-500 to 500)
+    }
+    
+    snowGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const snowMaterial = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.1,
+        transparent: true,
+        opacity: 0.8
+    });
+    
+    snowParticles = new THREE.Points(snowGeometry, snowMaterial);
+    scene.add(snowParticles);
     
     // Snow physics - reduced friction and momentum
     const originalCarSpeedX = carSpeedX;
@@ -358,6 +416,16 @@ function setSnowScenario() {
             // Apply momentum
             if (leftPressed) momentumX = -carSpeedX * snowFriction;
             if (rightPressed) momentumX = carSpeedX * snowFriction;
+            
+            // Move snow particles
+            const positions = snowParticles.geometry.attributes.position.array;
+            for (let i = 0; i < positions.length; i += 3) {
+                positions[i + 1] -= 0.05; // Fall down
+                if (positions[i + 1] < -10) {
+                    positions[i + 1] = Math.random() * 50 + 60;
+                }
+            }
+            snowParticles.geometry.attributes.position.needsUpdate = true;
             
             // Continue drifting with momentum
             car.position.x += momentumX;
@@ -373,6 +441,12 @@ function setMistScenario() {
     resetScenario();
     scene.background = new THREE.Color(0xaaaaaa); // Grey background
     scene.fog = new THREE.Fog(0xaaaaaa, 10, 50); // Add fog (color, near, far)
+    
+    // Enable headlights with yellow tint for better visibility in fog
+    headlight1.intensity = 1.5;
+    headlight2.intensity = 1.5;
+    headlight1.color.set(0xffffaa);
+    headlight2.color.set(0xffffaa);
 }
 
 function setNightScenario() {
@@ -381,7 +455,12 @@ function setNightScenario() {
     ambientLight.intensity = 0.1; // Dim ambient light
     directionalLight.intensity = 0.3; // Dim directional light
     directionalLight.color.set(0xaaaaff); // Bluish light
-    // TODO: Add car headlights
+    
+    // Enable headlights with blue-ish tint for night driving
+    headlight1.intensity = 2;
+    headlight2.intensity = 2;
+    headlight1.color.set(0xaaccff);
+    headlight2.color.set(0xaaccff);
 }
 // --- End Scenario Functions ---
 
