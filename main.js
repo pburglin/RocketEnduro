@@ -141,7 +141,7 @@ camera.lookAt(car.position.x, car.position.y, car.position.z); // Look at the ca
 // Controls (Removed OrbitControls)
 
 // Game loop
-function animate() {
+function animate() { // Revert to standard function declaration
     requestAnimationFrame(animate);
     
     
@@ -268,33 +268,39 @@ function animate() {
        `;
 
        // --- Scenario Update Logic ---
-       let nextScenario = 'start';
-       const cycleThreshold = baseScenarioThresholds.night + (scenarioCycle * scenarioCycleIncrement);
+       let determinedNextScenario = 'start'; // Default to start for the current cycle
+       const cycleBaseScore = scenarioCycle * scenarioCycleIncrement;
+       const cycleThreshold = baseScenarioThresholds.night + cycleBaseScore;
+       
+       //console.log(`Score: ${currentScore}, Cycle: ${scenarioCycle}, Cycle Threshold: ${cycleThreshold}`);
        
        if (currentScore >= cycleThreshold) {
            // Completed a full cycle
-           console.log(`Scenario cycle ${scenarioCycle} completed - returning to start scenario`);
+           console.log(`Cycle ${scenarioCycle} complete at score ${currentScore}. Threshold was ${cycleThreshold}. Incrementing cycle.`);
            scenarioCycle++;
-           nextScenario = 'start';
+           determinedNextScenario = 'start'; // Start the new cycle
        } else {
-           // Check current cycle scenarios
-           const adjustedThresholds = {
-               snow: baseScenarioThresholds.snow + (scenarioCycle * scenarioCycleIncrement),
-               mist: baseScenarioThresholds.mist + (scenarioCycle * scenarioCycleIncrement),
-               night: baseScenarioThresholds.night + (scenarioCycle * scenarioCycleIncrement)
-           };
+           // Check scenarios within the current cycle
+           const adjustedSnowThreshold = baseScenarioThresholds.snow + cycleBaseScore;
+           const adjustedMistThreshold = baseScenarioThresholds.mist + cycleBaseScore;
+           const adjustedNightThreshold = baseScenarioThresholds.night + cycleBaseScore; // Same as cycleThreshold, but clearer
            
-           if (currentScore >= adjustedThresholds.night) {
-               nextScenario = 'night';
-           } else if (currentScore >= adjustedThresholds.mist) {
-               nextScenario = 'mist';
-           } else if (currentScore >= adjustedThresholds.snow) {
-               nextScenario = 'snow';
+           //console.log(`Adjusted Thresholds - Snow: ${adjustedSnowThreshold}, Mist: ${adjustedMistThreshold}, Night: ${adjustedNightThreshold}`);
+
+           if (currentScore >= adjustedNightThreshold) { // Should not happen due to outer check, but for safety
+                determinedNextScenario = 'night';
+           } else if (currentScore >= adjustedMistThreshold) {
+                determinedNextScenario = 'mist';
+           } else if (currentScore >= adjustedSnowThreshold) {
+                determinedNextScenario = 'snow';
+           } else {
+                determinedNextScenario = 'start'; // Still in the 'start' phase of this cycle
            }
+           //console.log(`Determined next scenario within cycle: ${determinedNextScenario}`);
        }
        
-       if (nextScenario !== currentScenario) {
-           currentScenario = nextScenario;
+       if (determinedNextScenario !== currentScenario) {
+           currentScenario = determinedNextScenario;
            console.log(`Switching to scenario: ${currentScenario} (Cycle ${scenarioCycle})`);
            switch (currentScenario) {
                case 'start': setStartScenario(); break;
@@ -356,6 +362,8 @@ function resetScenario() {
     directionalLight.intensity = 0.8;
     directionalLight.color.set(0xffffff);
     roadMaterial.color.set(0x333333); // Reset road color
+    road.visible = true; // Ensure road is always visible
+    console.log(`Reset scenario: Road color set to default, visibility: ${road.visible}`);
     
     // Show/hide road markers based on scenario
     const showMarkers = currentScenario === 'start' || currentScenario === 'night';
@@ -376,7 +384,7 @@ function resetScenario() {
 }
 
 function setStartScenario() {
-    resetScenario();
+    resetScenario();    
     // Any specific setup for the start? Usually just the default.
 }
 
@@ -385,6 +393,7 @@ function setSnowScenario() {
     scene.background = new THREE.Color(0xcccccc); // Light grey background
     roadMaterial.color.set(0xffffff); // White road
     console.log('Snow scenario: Road color set to white');
+    console.log(`Snow Scenario: Headlight 1 intensity: ${headlight1.intensity}, Headlight 2 intensity: ${headlight2.intensity}`);
     
     // Create enhanced snow particles
     const snowGeometry = new THREE.BufferGeometry();
@@ -400,9 +409,9 @@ function setSnowScenario() {
     snowGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const snowMaterial = new THREE.PointsMaterial({
         color: 0xffffff,
-        size: 0.2, // Larger particles
+        size: 0.1, // Smaller particles
         transparent: true,
-        opacity: 0.9,
+        opacity: 0.5, // More transparent
         sizeAttenuation: true
     });
     
@@ -469,6 +478,8 @@ function setNightScenario() {
     console.log('Night scenario: Headlights activated with blue tint');
 }
 // --- End Scenario Functions ---
+
+setStartScenario();
 
 animate();
 
