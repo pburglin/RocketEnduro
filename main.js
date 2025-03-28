@@ -52,6 +52,37 @@ const road = new THREE.Mesh(roadGeometry, roadMaterial);
 road.position.y = -0.5;
 scene.add(road);
 
+// Road Markers
+const guardrailGeometry = new THREE.BoxGeometry(0.1, 0.5, 1000);
+const dashGeometry = new THREE.BoxGeometry(0.5, 0.05, 0.5);
+const markerMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+// Store marker references
+const roadMarkers = {
+    leftGuardrail: null,
+    rightGuardrail: null,
+    laneDashes: []
+};
+
+// Left guardrail
+roadMarkers.leftGuardrail = new THREE.Mesh(guardrailGeometry, markerMaterial);
+roadMarkers.leftGuardrail.position.set(-5.5, -0.25, 0);
+scene.add(roadMarkers.leftGuardrail);
+
+// Right guardrail
+roadMarkers.rightGuardrail = new THREE.Mesh(guardrailGeometry, markerMaterial);
+roadMarkers.rightGuardrail.position.set(5.5, -0.25, 0);
+scene.add(roadMarkers.rightGuardrail);
+
+// Lane dashes
+const dashSpacing = 2;
+for (let z = -500; z < 500; z += dashSpacing) {
+    const dash = new THREE.Mesh(dashGeometry, markerMaterial);
+    dash.position.set(0, -0.45, z);
+    roadMarkers.laneDashes.push(dash);
+    scene.add(dash);
+}
+
 // Player car
 const carGeometry = new THREE.BoxGeometry(1, 0.5, 2);
 const carMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
@@ -110,10 +141,27 @@ function animate() {
         // Clamp car position to road boundaries
         car.position.x = Math.max(-roadWidth / 2, Math.min(roadWidth / 2, car.position.x));
 
-        // Move road illusion
-        road.position.z += 0.2 * gameSpeed; // Make road scroll faster
-        if (road.position.z > 500) { // Reset road position periodically
-             road.position.z -= 1000;
+        // Move road and markers illusion
+        const moveSpeed = currentSpeed * 0.5 * gameSpeed;
+        road.position.z += moveSpeed;
+        
+        // Move guardrails
+        roadMarkers.leftGuardrail.position.z += moveSpeed;
+        roadMarkers.rightGuardrail.position.z += moveSpeed;
+        
+        // Move lane dashes
+        roadMarkers.laneDashes.forEach(dash => {
+            dash.position.z += moveSpeed;
+        });
+        
+        // Reset positions periodically
+        if (road.position.z > 500) {
+            road.position.z -= 1000;
+            roadMarkers.leftGuardrail.position.z -= 1000;
+            roadMarkers.rightGuardrail.position.z -= 1000;
+            roadMarkers.laneDashes.forEach(dash => {
+                if (dash.position.z > 500) dash.position.z -= 1000;
+            });
         }
 
        // --- Opponent Logic ---
@@ -205,6 +253,13 @@ function resetScenario() {
     directionalLight.intensity = 0.8;
     directionalLight.color.set(0xffffff);
     roadMaterial.color.set(0x333333); // Reset road color
+    
+    // Show/hide road markers based on scenario
+    const showMarkers = currentScenario === 'start' || currentScenario === 'night';
+    roadMarkers.leftGuardrail.visible = showMarkers;
+    roadMarkers.rightGuardrail.visible = showMarkers;
+    roadMarkers.laneDashes.forEach(dash => dash.visible = showMarkers);
+    
     // Remove snow particles if they exist
 }
 
