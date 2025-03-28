@@ -420,8 +420,8 @@ function setSnowScenario() {
     snowGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const snowMaterial = new THREE.PointsMaterial({
         color: 0xffffff,
-        size: 0.1, // Smaller particles
-        transparent: true,
+        size: 0.2, // Smaller particles
+        transparent: false,
         opacity: 0.5, // More transparent
         sizeAttenuation: true
     });
