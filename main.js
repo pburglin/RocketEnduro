@@ -40,7 +40,7 @@ const baseScenarioThresholds = {
     mist: 200,
     night: 300
 };
-const scenarioCycleIncrement = 300; // Score increment between cycles
+const scenarioCycleIncrement = 400; // Score increment between cycles
 
 // Scene setup
 const scene = new THREE.Scene();
@@ -190,14 +190,25 @@ function animate() { // Revert to standard function declaration
             dash.position.z += moveSpeed;
         });
         
-        // Reset positions periodically
-        if (road.position.z > 500) {
-            road.position.z -= 1000;
-            roadMarkers.leftGuardrail.position.z -= 1000;
-            roadMarkers.rightGuardrail.position.z -= 1000;
+        // Reset positions periodically and add new road section
+        if (car.position.z - road.position.z < 0) {
+            road.position.z -= 500;
+            roadMarkers.leftGuardrail.position.z -= 500;
+            roadMarkers.rightGuardrail.position.z -= 500;
             roadMarkers.laneDashes.forEach(dash => {
-                if (dash.position.z > 500) dash.position.z -= 1000;
+                dash.position.z -= 500;
             });
+        
+            // Update the scenario when the road section is repositioned
+            if (currentScenario === 'snow') {
+                setSnowScenario();
+            } else if (currentScenario === 'mist') {
+                setMistScenario();
+            } else if (currentScenario === 'night') {
+                setNightScenario();
+            } else {
+                setStartScenario();
+            }
         }
 
        // --- Opponent Logic ---
