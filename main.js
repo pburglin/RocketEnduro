@@ -1,6 +1,7 @@
 // Three.js is loaded via CDN script in index.html, using global THREE object
 // Game variables
 let score = 0;
+let highScore = localStorage.getItem('enduroHighScore') || 0;
 let gameSpeed = 1;
 let isGameOver = false;
 let leftPressed = false;
@@ -9,8 +10,8 @@ let upPressed = false;
 const carSpeedX = 0.15; // Horizontal speed of the car
 const carAcceleration = 0.005; // Increased acceleration
 const carDeceleration = 0.0015; // Slightly faster deceleration
-const maxSpeed = 0.4; // Increased max speed
-const minSpeed = 0.1;
+const maxSpeed = 0.6; // Increased max speed
+const minSpeed = 0.3;
 let currentSpeed = 0.1; // Start at min speed
 const baseCameraDistance = 5;
 const maxCameraDistance = 10;
@@ -35,6 +36,11 @@ const scenarioThresholds = {
     snow: 500,
     mist: 1500,
     night: 2500,
+    start: 3500,
+    mist: 4500,
+    snow: 5500,
+    night: 6500,
+    start: 7500,
     // Add more thresholds for cycling or increasing difficulty within scenarios
 };
 
@@ -201,12 +207,22 @@ function animate() {
            // Check for collision
            const opponentBox = new THREE.Box3().setFromObject(opponent);
            if (playerBox.intersectsBox(opponentBox)) {
-               isGameOver = true;
-               carMaterial.color.set(0x888888); // Indicate collision visually
-               opponentMaterial.color.set(0x888888);
-               console.log("Game Over! Collision detected.");
-               // Optionally add a game over message to the screen here
-               break; // Stop checking collisions once game is over
+               // Crash effect - red flicker
+               let flashCount = 0;
+               const flashInterval = setInterval(() => {
+                   scene.background = flashCount % 2 === 0 ?
+                       new THREE.Color(0xff0000) :
+                       new THREE.Color(0x000000);
+                   flashCount++;
+                   if (flashCount > 5) {
+                       clearInterval(flashInterval);
+                       isGameOver = true;
+                       carMaterial.color.set(0x888888);
+                       opponentMaterial.color.set(0x888888);
+                       console.log("Game Over! Collision detected.");
+                   }
+               }, 100);
+               break;
            }
 
            // Remove opponents that are behind the camera
@@ -221,7 +237,9 @@ function animate() {
        // Base score of 0.1 at minSpeed, up to 0.2 at maxSpeed, multiplied by gameSpeed
        score += (0.1 + (currentSpeed - minSpeed) * 0.25) * gameSpeed;
        const currentScore = Math.floor(score);
-       document.getElementById('score-display').textContent = `Score: ${currentScore}`;
+       document.getElementById('score-display').innerHTML = `
+           Score: ${currentScore} | High Score: ${highScore}
+       `;
 
        // --- Scenario Update Logic ---
        let nextScenario = 'start';
@@ -310,7 +328,28 @@ function setSnowScenario() {
     resetScenario();
     scene.background = new THREE.Color(0xcccccc); // Light grey background
     roadMaterial.color.set(0xffffff); // White road
-    // TODO: Add snow particle effect
+    
+    // Snow physics - reduced friction and momentum
+    const originalCarSpeedX = carSpeedX;
+    let momentumX = 0;
+    const snowFriction = 0.3; // Reduced friction coefficient
+    
+    // Modify car movement during snow
+    const originalAnimate = animate;
+    animate = function() {
+        if (currentScenario === 'snow') {
+            // Apply momentum
+            if (leftPressed) momentumX = -carSpeedX * snowFriction;
+            if (rightPressed) momentumX = carSpeedX * snowFriction;
+            
+            // Continue drifting with momentum
+            car.position.x += momentumX;
+            
+            // Gradually reduce momentum
+            momentumX *= 0.95;
+        }
+        originalAnimate.apply(this, arguments);
+    };
 }
 
 function setMistScenario() {
