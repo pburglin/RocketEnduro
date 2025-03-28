@@ -5,7 +5,15 @@ let gameSpeed = 1;
 let isGameOver = false;
 let leftPressed = false;
 let rightPressed = false;
+let upPressed = false;
 const carSpeedX = 0.15; // Horizontal speed of the car
+const carAcceleration = 0.005; // Increased acceleration
+const carDeceleration = 0.0015; // Slightly faster deceleration
+const maxSpeed = 0.4; // Increased max speed
+const minSpeed = 0.1;
+let currentSpeed = 0.1; // Start at min speed
+const baseCameraDistance = 5;
+const maxCameraDistance = 10;
 const roadWidth = 9; // Effective playable width (Road width 10 - Car width 1)
 
 // Opponent variables
@@ -80,9 +88,16 @@ function animate() {
     
     
     if (!isGameOver) {
-        // Move road to simulate car movement (forward)
-        // We'll move the car forward later, for now, just the road scrolls
-        // car.position.z -= 0.1 * gameSpeed; // If car moves instead of road
+        // Handle acceleration/deceleration
+        if (upPressed) {
+            currentSpeed += carAcceleration;
+        } else {
+            currentSpeed -= carDeceleration;
+        }
+        currentSpeed = Math.max(minSpeed, Math.min(maxSpeed, currentSpeed));
+
+        // Move car forward
+        car.position.z -= currentSpeed * gameSpeed;
 
         // Handle car horizontal movement
         if (leftPressed) {
@@ -115,8 +130,8 @@ function animate() {
        for (let i = opponentCars.length - 1; i >= 0; i--) {
            const opponent = opponentCars[i];
            
-           // Move opponent forward (relative to road scroll)
-           opponent.position.z += 0.2 * gameSpeed * opponentSpeedFactor;
+           // Move opponent forward (relative to car movement)
+           opponent.position.z += currentSpeed * gameSpeed * opponentSpeedFactor;
 
            // Check for collision
            const opponentBox = new THREE.Box3().setFromObject(opponent);
@@ -137,8 +152,9 @@ function animate() {
        }
        // --- End Opponent Logic ---
 
-       // Update score
-       score += 0.1 * gameSpeed;
+       // Update score based on distance moved (faster when accelerating)
+       // Base score of 0.1 at minSpeed, up to 0.2 at maxSpeed, multiplied by gameSpeed
+       score += (0.1 + (currentSpeed - minSpeed) * 0.25) * gameSpeed;
        const currentScore = Math.floor(score);
        document.getElementById('score-display').textContent = `Score: ${currentScore}`;
 
@@ -167,10 +183,12 @@ function animate() {
        // Gradually increase difficulty
        gameSpeed += 0.0001;
 
-        // Update camera to follow car
+        // Update camera to follow car with dynamic distance based on speed
+        const cameraDistance = baseCameraDistance +
+            ((currentSpeed - minSpeed) / (maxSpeed - minSpeed)) * (maxCameraDistance - baseCameraDistance);
         camera.position.x = car.position.x * 0.5; // Dampen camera horizontal movement
         camera.position.y = 2;
-        camera.position.z = car.position.z + 5;
+        camera.position.z = car.position.z + cameraDistance;
         camera.lookAt(car.position.x, car.position.y, car.position.z);
 
     }
@@ -233,6 +251,8 @@ window.addEventListener('keydown', (event) => {
         leftPressed = true;
     } else if (event.key === 'ArrowRight') {
         rightPressed = true;
+    } else if (event.key === 'ArrowUp') {
+        upPressed = true;
     }
 });
 
@@ -241,5 +261,7 @@ window.addEventListener('keyup', (event) => {
         leftPressed = false;
     } else if (event.key === 'ArrowRight') {
         rightPressed = false;
+    } else if (event.key === 'ArrowUp') {
+        upPressed = false;
     }
 });
