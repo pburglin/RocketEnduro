@@ -1,7 +1,7 @@
 // Three.js is loaded via CDN script in index.html, using global THREE object
 // Game variables
 let score = 0;
-let highScore = localStorage.getItem('enduroHighScore') || 0;
+let highScore = Number(localStorage.getItem('enduroHighScore')) || 0;
 let gameSpeed = 1;
 let isGameOver = false;
 let leftPressed = false;
@@ -34,13 +34,13 @@ const opponentSpeedFactor = 0.8; // Opponents move slightly slower than gameSpee
 let currentScenario = 'start'; // 'start', 'snow', 'mist', 'night'
 const scenarioThresholds = {
     snow: 500,
-    mist: 1500,
-    night: 2500,
-    start: 3500,
-    mist: 4500,
-    snow: 5500,
-    night: 6500,
-    start: 7500,
+    mist: 2500,
+    night: 3500,
+    start: 4500,
+    mist: 5500,
+    snow: 6500,
+    night: 7500,
+    start: 8500,
     // Add more thresholds for cycling or increasing difficulty within scenarios
 };
 
@@ -190,9 +190,13 @@ function animate() {
        // Spawn opponents
        opponentSpawnTimer--;
        if (opponentSpawnTimer <= 0) {
-           spawnOpponentCar();
+           // Spawn more opponents as score increases (1-3 cars)
+           const carsToSpawn = 1 + Math.min(2, Math.floor(score / 2000));
+           for (let i = 0; i < carsToSpawn; i++) {
+               spawnOpponentCar();
+           }
            // Reset timer - faster spawns as game speeds up
-           opponentSpawnTimer = Math.max(30, opponentSpawnIntervalBase / gameSpeed);
+           opponentSpawnTimer = Math.max(20, opponentSpawnIntervalBase / (gameSpeed * 1.5));
        }
 
        // Move opponents and check collisions
@@ -237,8 +241,16 @@ function animate() {
        // Base score of 0.1 at minSpeed, up to 0.2 at maxSpeed, multiplied by gameSpeed
        score += (0.1 + (currentSpeed - minSpeed) * 0.25) * gameSpeed;
        const currentScore = Math.floor(score);
+       
+       // Update high score if current score is higher
+       if (currentScore > highScore) {
+           highScore = currentScore;
+           localStorage.setItem('enduroHighScore', highScore);
+       }
+       
        document.getElementById('score-display').innerHTML = `
-           Score: ${currentScore} | High Score: ${highScore}
+           <div>Score: ${currentScore}</div>
+           <div>High Score: ${highScore}</div>
        `;
 
        // --- Scenario Update Logic ---
@@ -265,9 +277,14 @@ function animate() {
        
        // Generate curves periodically
        if (curveSpawnTimer <= 0 && Math.abs(currentCurve) < 0.01) {
-           // Random curve direction and length
-           currentCurve = (Math.random() > 0.5 ? 1 : -1) * Math.random() * maxCurveAngle;
-           curveSpawnTimer = 300 + Math.random() * 300;
+           // More frequent and sharper curves as score increases
+           const difficultyFactor = Math.min(2, 1 + score / 5000); // Scales from 1 to 2
+           currentCurve = (Math.random() > 0.5 ? 1 : -1) *
+                        (0.5 + Math.random() * 0.5) * // 50-100% of max angle
+                        maxCurveAngle * difficultyFactor;
+           
+           // Reduce spawn interval based on score
+           curveSpawnTimer = Math.max(50, 300 / difficultyFactor + Math.random() * 100);
        } else if (curveSpawnTimer > 0) {
            curveSpawnTimer--;
        }
