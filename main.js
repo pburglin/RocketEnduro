@@ -16,6 +16,13 @@ const baseCameraDistance = 5;
 const maxCameraDistance = 10;
 const roadWidth = 9; // Effective playable width (Road width 10 - Car width 1)
 
+// Curve variables
+let currentCurve = 0; // Current curve angle in radians
+let curveSegments = []; // Array of {zPos, curveAngle}
+let nextCurveZ = 200; // Z position of next curve
+const maxCurveAngle = Math.PI/8; // Maximum curve angle
+let curveSpawnTimer = 0;
+
 // Opponent variables
 const opponentCars = [];
 let opponentSpawnTimer = 100; // Initial delay before first spawn
@@ -130,12 +137,21 @@ function animate() {
         // Move car forward
         car.position.z -= currentSpeed * gameSpeed;
 
-        // Handle car horizontal movement
-        if (leftPressed) {
-            car.position.x -= carSpeedX;
-        }
-        if (rightPressed) {
-            car.position.x += carSpeedX;
+        // Handle car horizontal movement with curve physics
+        if (leftPressed || rightPressed) {
+            // Calculate curve resistance factor (0-1 based on speed)
+            const resistance = Math.min(1, currentSpeed * 2.5);
+            
+            // Apply movement with curve resistance
+            if (leftPressed) {
+                car.position.x -= carSpeedX * (1 - resistance * Math.max(0, currentCurve));
+            }
+            if (rightPressed) {
+                car.position.x += carSpeedX * (1 - resistance * Math.max(0, -currentCurve));
+            }
+            
+            // Natural drift toward tangent of curve
+            car.position.x += currentCurve * currentSpeed * 0.1;
         }
 
         // Clamp car position to road boundaries
@@ -178,8 +194,9 @@ function animate() {
        for (let i = opponentCars.length - 1; i >= 0; i--) {
            const opponent = opponentCars[i];
            
-           // Move opponent forward (relative to car movement)
+           // Move opponent forward (relative to car movement) with curve effect
            opponent.position.z += currentSpeed * gameSpeed * opponentSpeedFactor;
+           opponent.position.x += currentCurve * currentSpeed * 0.05; // Slight curve drift
 
            // Check for collision
            const opponentBox = new THREE.Box3().setFromObject(opponent);
@@ -228,8 +245,29 @@ function animate() {
        }
        // --- End Scenario Update Logic ---
        
-       // Gradually increase difficulty
+       // Generate curves periodically
+       if (curveSpawnTimer <= 0 && Math.abs(currentCurve) < 0.01) {
+           // Random curve direction and length
+           currentCurve = (Math.random() > 0.5 ? 1 : -1) * Math.random() * maxCurveAngle;
+           curveSpawnTimer = 300 + Math.random() * 300;
+       } else if (curveSpawnTimer > 0) {
+           curveSpawnTimer--;
+       }
+       
+       // Gradually reduce current curve
+       if (Math.abs(currentCurve) > 0.01) {
+           currentCurve *= 0.99;
+       } else {
+           currentCurve = 0;
+       }
+       
+       // Increase difficulty
        gameSpeed += 0.0001;
+       
+       // More opponents during curves
+       if (Math.abs(currentCurve) > 0.1) {
+           opponentSpawnTimer -= 2; // Spawn twice as fast during curves
+       }
 
         // Update camera to follow car with dynamic distance based on speed
         const cameraDistance = baseCameraDistance +
