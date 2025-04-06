@@ -501,30 +501,84 @@ const acceleratorBtn = document.getElementById('accelerator-btn');
 
 // Enable controls only on touch devices
 if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-    leftTouch.addEventListener('touchstart', () => leftPressed = true);
-    leftTouch.addEventListener('touchend', () => leftPressed = false);
-    leftTouch.addEventListener('touchcancel', () => leftPressed = false);
+    leftTouch.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        leftPressed = true;
+    });
+    leftTouch.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        leftPressed = false;
+    });
+    leftTouch.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        leftPressed = false;
+    });
     
-    rightTouch.addEventListener('touchstart', () => rightPressed = true);
-    rightTouch.addEventListener('touchend', () => rightPressed = false);
-    rightTouch.addEventListener('touchcancel', () => rightPressed = false);
+    rightTouch.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        rightPressed = true;
+    });
+    rightTouch.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        rightPressed = false;
+    });
+    rightTouch.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        rightPressed = false;
+    });
     
-    acceleratorBtn.addEventListener('touchstart', () => upPressed = true);
-    acceleratorBtn.addEventListener('touchend', () => upPressed = false);
-    acceleratorBtn.addEventListener('touchcancel', () => upPressed = false);
+    acceleratorBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        upPressed = true;
+    });
+    acceleratorBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        upPressed = false;
+    });
+    acceleratorBtn.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        upPressed = false;
+    });
     
     // Also support mouse events for hybrid devices
-    leftTouch.addEventListener('mousedown', () => leftPressed = true);
-    leftTouch.addEventListener('mouseup', () => leftPressed = false);
-    leftTouch.addEventListener('mouseleave', () => leftPressed = false);
+    leftTouch.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        leftPressed = true;
+    });
+    leftTouch.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        leftPressed = false;
+    });
+    leftTouch.addEventListener('mouseleave', (e) => {
+        e.preventDefault();
+        leftPressed = false;
+    });
     
-    rightTouch.addEventListener('mousedown', () => rightPressed = true);
-    rightTouch.addEventListener('mouseup', () => rightPressed = false);
-    rightTouch.addEventListener('mouseleave', () => rightPressed = false);
+    rightTouch.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        rightPressed = true;
+    });
+    rightTouch.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        rightPressed = false;
+    });
+    rightTouch.addEventListener('mouseleave', (e) => {
+        e.preventDefault();
+        rightPressed = false;
+    });
     
-    acceleratorBtn.addEventListener('mousedown', () => upPressed = true);
-    acceleratorBtn.addEventListener('mouseup', () => upPressed = false);
-    acceleratorBtn.addEventListener('mouseleave', () => upPressed = false);
+    acceleratorBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        upPressed = true;
+    });
+    acceleratorBtn.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        upPressed = false;
+    });
+    acceleratorBtn.addEventListener('mouseleave', (e) => {
+        e.preventDefault();
+        upPressed = false;
+    });
 }
 
 // Keyboard event listeners (existing)
