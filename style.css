@@ -24,3 +24,59 @@ body {
 canvas {
     display: block;
 }
+
+.mobile-controls {
+    display: none; /* Hidden by default, shown only on mobile */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allow clicks through to game */
+    z-index: 50;
+}
+
+.touch-area {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 50%;
+    pointer-events: auto; /* Enable touch events */
+}
+
+.left-touch {
+    left: 0;
+}
+
+.right-touch {
+    right: 0;
+}
+
+.accelerator-btn {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px 30px;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: 2px solid white;
+    border-radius: 30px;
+    font-size: 18px;
+    font-weight: bold;
+    pointer-events: auto;
+    z-index: 100;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.accelerator-btn:active {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .mobile-controls {
+        display: block; /* Show only on touch devices */
+    }
+}

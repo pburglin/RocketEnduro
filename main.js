@@ -494,7 +494,40 @@ setStartScenario();
 
 animate();
 
-// Event listeners
+// Mobile controls
+const leftTouch = document.querySelector('.left-touch');
+const rightTouch = document.querySelector('.right-touch');
+const acceleratorBtn = document.getElementById('accelerator-btn');
+
+// Enable controls only on touch devices
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    leftTouch.addEventListener('touchstart', () => leftPressed = true);
+    leftTouch.addEventListener('touchend', () => leftPressed = false);
+    leftTouch.addEventListener('touchcancel', () => leftPressed = false);
+    
+    rightTouch.addEventListener('touchstart', () => rightPressed = true);
+    rightTouch.addEventListener('touchend', () => rightPressed = false);
+    rightTouch.addEventListener('touchcancel', () => rightPressed = false);
+    
+    acceleratorBtn.addEventListener('touchstart', () => upPressed = true);
+    acceleratorBtn.addEventListener('touchend', () => upPressed = false);
+    acceleratorBtn.addEventListener('touchcancel', () => upPressed = false);
+    
+    // Also support mouse events for hybrid devices
+    leftTouch.addEventListener('mousedown', () => leftPressed = true);
+    leftTouch.addEventListener('mouseup', () => leftPressed = false);
+    leftTouch.addEventListener('mouseleave', () => leftPressed = false);
+    
+    rightTouch.addEventListener('mousedown', () => rightPressed = true);
+    rightTouch.addEventListener('mouseup', () => rightPressed = false);
+    rightTouch.addEventListener('mouseleave', () => rightPressed = false);
+    
+    acceleratorBtn.addEventListener('mousedown', () => upPressed = true);
+    acceleratorBtn.addEventListener('mouseup', () => upPressed = false);
+    acceleratorBtn.addEventListener('mouseleave', () => upPressed = false);
+}
+
+// Keyboard event listeners (existing)
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
